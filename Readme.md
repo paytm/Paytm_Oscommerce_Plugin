@@ -2,9 +2,9 @@
 
  1. Extract the plugin files.
  2. Upload the following files:
-   - /catalog/includes/languages/english/modules/payment/paytm.php
-   - /catalog/includes/modules/payment/paytm.php
-   - /catalog/includes/encdec_paytm.php
+  - /catalog/includes/languages/english/modules/payment/paytm.php
+  - /catalog/includes/modules/payment/paytm.php
+  - /catalog/includes/encdec_paytm.php
  3. Login to admin section and open Module->Payment.
  4. Select install module option.
  5. Choose Paytm module from the list of available payment gateways and select install module. 
