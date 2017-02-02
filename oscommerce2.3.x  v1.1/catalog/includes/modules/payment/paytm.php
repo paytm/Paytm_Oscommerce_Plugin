@@ -498,6 +498,20 @@
     }
 
     function after_process() {
+		// Create an array having all required parameters for status query.
+		$requestParamList = array("MID" => MODULE_PAYMENT_PAYTM_MERCHANT_ID , "ORDERID" => $_POST['ORDERID']);
+		
+		$mod = MODULE_PAYMENT_PAYTM_MODE;
+		
+		if($mod == "Test"){
+			$check_status_url = 'https://pguat.paytm.com/oltp/HANDLER_INTERNAL/TXNSTATUS';
+		}else{
+			$check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/TXNSTATUS';
+		}
+		
+		$responseParamList = callAPI($check_status_url, $requestParamList);
+		if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$_POST['TXNAMOUNT'])
+		{
 			global $insert_id;
 			$status_comment=array();
 			if(isset($_POST)){
@@ -517,7 +531,11 @@
                               'customer_notified' => '0',
                               'comments' => implode("\n", $status_comment));
 
-      tep_db_perform(TABLE_ORDERS_STATUS_HISTORY, $sql_data_array);
+			tep_db_perform(TABLE_ORDERS_STATUS_HISTORY, $sql_data_array);
+		}
+		else{
+			tep_redirect(tep_href_link(FILENAME_CHECKOUT_SHIPPING, 'error_message=' . urlencode("Security error...!"), 'SSL', true, false));
+		}
 			
     }
 
