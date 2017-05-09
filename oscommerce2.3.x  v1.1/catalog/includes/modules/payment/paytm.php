@@ -499,6 +499,7 @@
 
     function after_process() {
 		// Create an array having all required parameters for status query.
+	    	$merchant_key =html_entity_decode(MODULE_PAYMENT_PAYTM_MERCHANT_KEY);
 		$requestParamList = array("MID" => MODULE_PAYMENT_PAYTM_MERCHANT_ID , "ORDERID" => $_POST['ORDERID']);
 		
 		$StatusCheckSum = getChecksumFromArray($requestParamList, $merchant_key);
