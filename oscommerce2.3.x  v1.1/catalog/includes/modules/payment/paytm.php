@@ -539,7 +539,7 @@
 			tep_db_perform(TABLE_ORDERS_STATUS_HISTORY, $sql_data_array);
 		}
 		else{
-			tep_redirect(tep_href_link(FILENAME_CHECKOUT_SHIPPING, 'error_message=' . urlencode("Security error...!"), 'SSL', true, false));
+			tep_redirect(tep_href_link(FILENAME_CHECKOUT_SHIPPING, 'error_message=' . urlencode("It seems some issue in server to server communication. Kindly connect with administrator."), 'SSL', true, false));
 		}
 			
     }
