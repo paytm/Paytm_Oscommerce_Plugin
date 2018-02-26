@@ -30,9 +30,11 @@
       if (is_object($order)){
 				$this->update_status();
 			}
-			
-			$this->form_action_url = 'https://secure.paytm.in/oltp-web/processTransaction';
-			
+      /* 19751/17Jan2018 */
+        // $this->form_action_url = 'https://secure.paytm.in/oltp-web/processTransaction';
+        $this->form_action_url = MODULE_PAYMENT_PAYTM_TRANSACTION_URL;
+			/* 19751/17Jan2018 end */
+
     }
 
 // class methods
@@ -69,12 +71,22 @@
 
     function pre_confirmation_check() {
 			global $cart; 
-			$mod = MODULE_PAYMENT_PAYTM_MODE;
-		  if($mod == "Test"){
-		  	$this->form_action_url = "https://pguat.paytm.com/oltp-web/processTransaction";
-		  }else{
-		  	$this->form_action_url ="https://secure.paytm.in/oltp-web/processTransaction";
-		  }
+      $transaction_url = MODULE_PAYMENT_PAYTM_TRANSACTION_URL;
+			// $mod = MODULE_PAYMENT_PAYTM_MODE;
+      /*  19751/17Jan2018 */
+        /*if($mod == "Test"){
+          $this->form_action_url = "https://pguat.paytm.com/oltp-web/processTransaction";
+        }else{
+          $this->form_action_url ="https://secure.paytm.in/oltp-web/processTransaction";
+        }*/
+
+        /*if($mod == "Test"){
+          $this->form_action_url = "https://securegw-stage.paytm.in/theia/processTransaction";
+        }else{
+          $this->form_action_url ="https://securegw.paytm.in/theia/processTransaction";
+        }*/
+        $this->form_action_url =$transaction_url;
+  		/*  19751/17Jan2018 end */
 
 			if ( empty($cart->cartID))
       {
@@ -506,14 +518,23 @@
 							
 		$requestParamList['CHECKSUMHASH'] = $StatusCheckSum;
 		
-		$mod = MODULE_PAYMENT_PAYTM_MODE;
-		
-		if($mod == "Test"){
-			$check_status_url = 'https://pguat.paytm.com/oltp/HANDLER_INTERNAL/getTxnStatus';
-		}else{
-			$check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/getTxnStatus';
-		}
-		
+    // $mod = MODULE_PAYMENT_PAYTM_MODE;
+		$transaction_status_url = MODULE_PAYMENT_PAYTM_TRANSACTION_STATUS_URL;
+    /*  19751/17Jan2018 */
+      /*if($mod == "Test"){
+        $check_status_url = 'https://pguat.paytm.com/oltp/HANDLER_INTERNAL/getTxnStatus';
+      }else{
+        $check_status_url = 'https://secure.paytm.in/oltp/HANDLER_INTERNAL/getTxnStatus';
+      }*/
+
+      /*if($mod == "Test"){
+        $check_status_url = 'https://securegw-stage.paytm.in/merchant-status/getTxnStatus';
+      }else{
+        $check_status_url = 'https://securegw.paytm.in/merchant-status/getTxnStatus';
+      }*/
+      $check_status_url = $transaction_status_url;
+		/*  19751/17Jan2018 end */
+
 		$responseParamList = callNewAPI($check_status_url, $requestParamList);
 		if($responseParamList['STATUS']=='TXN_SUCCESS' && $responseParamList['TXNAMOUNT']==$_POST['TXNAMOUNT'])
 		{
@@ -562,7 +583,12 @@
 	    tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Merchant Key', 'MODULE_PAYMENT_PAYTM_MERCHANT_KEY', 'Paytm Merchant Key', 'Merchant key.Please note that get this key ,login to your Paytm merchant account', '6', '2', now())");
 			tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Website', 'MODULE_PAYMENT_PAYTM_WEBSITE', 'Merchant Website', 'The Website given by Paytm', '6', '2', now())");
 			tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Industry Type', 'MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID', 'Industry type', 'The merchant industry type', '6', '2', now())");
-	    tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Transaction Mode', 'MODULE_PAYMENT_PAYTM_MODE', 'Test', 'Mode of transactions : Test(Sandbox) or Live ', '6', '0', 'tep_cfg_select_option(array(\'Test\',\'Live\'), ', now())");
+
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Transaction URL', 'MODULE_PAYMENT_PAYTM_TRANSACTION_URL', 'Paytm Transaction Url', 'The Transaction URL given by Paytm', '6', '2', now())");
+
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Transaction Status URL', 'MODULE_PAYMENT_PAYTM_TRANSACTION_STATUS_URL', 'Paytm Transaction Status Url', 'The Transaction Status URL given by Paytm', '6', '2', now())");
+
+	    /*tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Transaction Mode', 'MODULE_PAYMENT_PAYTM_MODE', 'Test', 'Mode of transactions : Test(Sandbox) or Live ', '6', '0', 'tep_cfg_select_option(array(\'Test\',\'Live\'), ', now())");*/
       tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added) values ('PAYTM Payment Zone', 'MODULE_PAYMENT_PAYTM_ZONE', '0', 'If a zone is selected, only enable this payment method for that zone.', '6', '2', 'tep_get_zone_class_title', 'tep_cfg_pull_down_zone_classes(', now())");
       tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('PAYTM Sort order of  display.', 'MODULE_PAYMENT_PAYTM_SORT_ORDER', '0', 'Sort order of PAYTM display. Lowest is displayed first.', '6', '0', now())");
       tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added) values ('PAYTM Set Order Status', 'MODULE_PAYMENT_PAYTM_ORDER_STATUS_ID', '0', 'Set the status of orders made with this payment module to this value', '6', '0', 'tep_cfg_pull_down_order_statuses(', 'tep_get_order_status_name', now())");
@@ -579,7 +605,7 @@
       tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in (" . $keys . ")");
     }
     function keys() {
-      return array('MODULE_PAYMENT_PAYTM_STATUS', 'MODULE_PAYMENT_PAYTM_MERCHANT_ID','MODULE_PAYMENT_PAYTM_MERCHANT_KEY','MODULE_PAYMENT_PAYTM_MODE','MODULE_PAYMENT_PAYTM_ZONE','MODULE_PAYMENT_PAYTM_SORT_ORDER', 'MODULE_PAYMENT_PAYTM_ORDER_STATUS_ID', 'MODULE_PAYMENT_PAYTM_CALLBACK','MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID', 'MODULE_PAYMENT_PAYTM_WEBSITE');
+      return array('MODULE_PAYMENT_PAYTM_STATUS', 'MODULE_PAYMENT_PAYTM_MERCHANT_ID','MODULE_PAYMENT_PAYTM_MERCHANT_KEY',/*'MODULE_PAYMENT_PAYTM_MODE'*/'MODULE_PAYMENT_PAYTM_TRANSACTION_URL','MODULE_PAYMENT_PAYTM_TRANSACTION_STATUS_URL','MODULE_PAYMENT_PAYTM_ZONE','MODULE_PAYMENT_PAYTM_SORT_ORDER', 'MODULE_PAYMENT_PAYTM_ORDER_STATUS_ID', 'MODULE_PAYMENT_PAYTM_CALLBACK','MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID', 'MODULE_PAYMENT_PAYTM_WEBSITE');
     }
   }
 ?>
