@@ -20,6 +20,16 @@
       $this->code = 'paytm'; 
       $this->title = MODULE_PAYMENT_PAYTM_TEXT_TITLE;
       $this->description = MODULE_PAYMENT_PAYTM_TEXT_DESCRIPTION;
+
+      $my_file = dirname(__FILE__) . DIRECTORY_SEPARATOR.'/paytm_version.txt';
+      if(file_exists($my_file)){
+        $handle = fopen($my_file, 'r');
+        if($handle){
+          $data = fread($handle,filesize($my_file));
+          $this->description.=" plugin updated on ".date("d F Y", strtotime($data));
+        }
+      }
+      
       $this->sort_order = MODULE_PAYMENT_PAYTM_SORT_ORDER;
       $this->enabled = ((MODULE_PAYMENT_PAYTM_STATUS == 'True') ? true : false);
 
@@ -451,8 +461,8 @@
 		  $merchant_key =html_entity_decode(MODULE_PAYMENT_PAYTM_MERCHANT_KEY);
 		  $website = MODULE_PAYMENT_PAYTM_WEBSITE;
 		  $industry_type_id = MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID;
-      $callback_enabled= MODULE_PAYMENT_PAYTM_CALLBACK;
-			
+      $customCallBackUrl= MODULE_PAYMENT_PAYTM_CUSTOM_CALLBACKURL;
+      
 			$amount = $order->info['total']; 
 			//$orderId = $cart->cartID;	
 			      $order_id = substr($cart_DirecPay_ID, strpos($cart_DirecPay_ID, '-')+1);
@@ -469,9 +479,12 @@
 				"TXN_AMOUNT" => $amount
 			);
 			
-			if(stripos($callback_enabled,"yes") !== false){
-				$post_variables['CALLBACK_URL'] = tep_href_link(FILENAME_CHECKOUT_PROCESS, '', 'SSL');
-			}
+			$post_variables['CALLBACK_URL'] = tep_href_link(FILENAME_CHECKOUT_PROCESS, '', 'SSL');
+      if(trim($customCallBackUrl)!=''){
+        if(filter_var($customCallBackUrl, FILTER_VALIDATE_URL)){
+          $post_variables['CALLBACK_URL']=$customCallBackUrl;
+        }
+      }
 			
 			
 		
@@ -579,20 +592,22 @@
 		
 		function install() {
       tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Enable PAYTM Module', 'MODULE_PAYMENT_PAYTM_STATUS', 'True', 'Do you want to accept PAYTM payments?', '6', '1', 'tep_cfg_select_option(array(\'True\', \'False\'), ', now())");
-      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('MerchantID', 'MODULE_PAYMENT_PAYTM_MERCHANT_ID', 'Paytm MerchantId', 'The Merchant Id given by Paytm', '6', '2', now())");
-	    tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Merchant Key', 'MODULE_PAYMENT_PAYTM_MERCHANT_KEY', 'Paytm Merchant Key', 'Merchant key.Please note that get this key ,login to your Paytm merchant account', '6', '2', now())");
-			tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Website', 'MODULE_PAYMENT_PAYTM_WEBSITE', 'Merchant Website', 'The Website given by Paytm', '6', '2', now())");
-			tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Industry Type', 'MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID', 'Industry type', 'The merchant industry type', '6', '2', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('MerchantID', 'MODULE_PAYMENT_PAYTM_MERCHANT_ID', '', 'The Merchant Id given by Paytm', '6', '2', now())");
+	    tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Merchant Key', 'MODULE_PAYMENT_PAYTM_MERCHANT_KEY', '', 'Merchant key.Please note that get this key ,login to your Paytm merchant account', '6', '2', now())");
+			tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Website', 'MODULE_PAYMENT_PAYTM_WEBSITE', '', 'The Website given by Paytm', '6', '2', now())");
+			tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Industry Type', 'MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID', '', 'The merchant industry type', '6', '2', now())");
 
-      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Transaction URL', 'MODULE_PAYMENT_PAYTM_TRANSACTION_URL', 'Paytm Transaction Url', 'The Transaction URL given by Paytm', '6', '2', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Custom Callback Url(If you want)', 'MODULE_PAYMENT_PAYTM_CUSTOM_CALLBACKURL', '', 'if you want then edit it oterwise skeep empty', '6', '2', now())");
 
-      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Transaction Status URL', 'MODULE_PAYMENT_PAYTM_TRANSACTION_STATUS_URL', 'Paytm Transaction Status Url', 'The Transaction Status URL given by Paytm', '6', '2', now())");
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Transaction URL', 'MODULE_PAYMENT_PAYTM_TRANSACTION_URL', '', 'The Transaction URL given by Paytm', '6', '2', now())");
+
+      tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('Transaction Status URL', 'MODULE_PAYMENT_PAYTM_TRANSACTION_STATUS_URL', '', 'The Transaction Status URL given by Paytm', '6', '2', now())");
 
 	    /*tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Transaction Mode', 'MODULE_PAYMENT_PAYTM_MODE', 'Test', 'Mode of transactions : Test(Sandbox) or Live ', '6', '0', 'tep_cfg_select_option(array(\'Test\',\'Live\'), ', now())");*/
       tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, use_function, set_function, date_added) values ('PAYTM Payment Zone', 'MODULE_PAYMENT_PAYTM_ZONE', '0', 'If a zone is selected, only enable this payment method for that zone.', '6', '2', 'tep_get_zone_class_title', 'tep_cfg_pull_down_zone_classes(', now())");
       tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, date_added) values ('PAYTM Sort order of  display.', 'MODULE_PAYMENT_PAYTM_SORT_ORDER', '0', 'Sort order of PAYTM display. Lowest is displayed first.', '6', '0', now())");
       tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, use_function, date_added) values ('PAYTM Set Order Status', 'MODULE_PAYMENT_PAYTM_ORDER_STATUS_ID', '0', 'Set the status of orders made with this payment module to this value', '6', '0', 'tep_cfg_pull_down_order_statuses(', 'tep_get_order_status_name', now())");
-	    tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Callback', 'MODULE_PAYMENT_PAYTM_CALLBACK', 'No', 'Would you like to enable Callback URL?', '6', '0', 'tep_cfg_select_option(array(\'Yes\', \'No\'), ', now())");
+	    /*tep_db_query("insert into " . TABLE_CONFIGURATION . " (configuration_title, configuration_key, configuration_value, configuration_description, configuration_group_id, sort_order, set_function, date_added) values ('Callback', 'MODULE_PAYMENT_PAYTM_CALLBACK', 'No', 'Would you like to enable Callback URL?', '6', '0', 'tep_cfg_select_option(array(\'Yes\', \'No\'), ', now())");*/
     }
 
     function remove() {
@@ -605,7 +620,7 @@
       tep_db_query("delete from " . TABLE_CONFIGURATION . " where configuration_key in (" . $keys . ")");
     }
     function keys() {
-      return array('MODULE_PAYMENT_PAYTM_STATUS', 'MODULE_PAYMENT_PAYTM_MERCHANT_ID','MODULE_PAYMENT_PAYTM_MERCHANT_KEY',/*'MODULE_PAYMENT_PAYTM_MODE'*/'MODULE_PAYMENT_PAYTM_TRANSACTION_URL','MODULE_PAYMENT_PAYTM_TRANSACTION_STATUS_URL','MODULE_PAYMENT_PAYTM_ZONE','MODULE_PAYMENT_PAYTM_SORT_ORDER', 'MODULE_PAYMENT_PAYTM_ORDER_STATUS_ID', 'MODULE_PAYMENT_PAYTM_CALLBACK','MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID', 'MODULE_PAYMENT_PAYTM_WEBSITE');
+      return array('MODULE_PAYMENT_PAYTM_STATUS', 'MODULE_PAYMENT_PAYTM_MERCHANT_ID','MODULE_PAYMENT_PAYTM_MERCHANT_KEY','MODULE_PAYMENT_PAYTM_CUSTOM_CALLBACKURL','MODULE_PAYMENT_PAYTM_TRANSACTION_URL','MODULE_PAYMENT_PAYTM_TRANSACTION_STATUS_URL','MODULE_PAYMENT_PAYTM_ZONE','MODULE_PAYMENT_PAYTM_SORT_ORDER', 'MODULE_PAYMENT_PAYTM_ORDER_STATUS_ID','MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID', 'MODULE_PAYMENT_PAYTM_WEBSITE');
     }
   }
 ?>

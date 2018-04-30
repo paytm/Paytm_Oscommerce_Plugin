@@ -10,12 +10,3 @@
  5. Once it gets installed properly , you can see paytm module in "Payments Module" list. 
  6. Select Paytm  module, Insert the values provided by Paytm team and save.
  7. If you have a linux server make sure the Folder permission are set to 755 and file permission to 644.
-
-# Paytm PG URL Details
-	staging	
-		Transaction URL             => https://securegw-stage.paytm.in/theia/processTransaction
-		Transaction Status Url      => https://securegw-stage.paytm.in/merchant-status/getTxnStatus
-
-	Production
-		Transaction URL             => https://securegw.paytm.in/theia/processTransaction
-		Transaction Status Url      => https://securegw.paytm.in/merchant-status/getTxnStatus
