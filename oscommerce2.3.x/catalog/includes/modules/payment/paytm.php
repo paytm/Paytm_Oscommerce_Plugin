@@ -10,7 +10,8 @@ Copyright (c) 2003 osCommerce
 Released under the GNU General Public License
  */
 
-require dirname(__FILE__) . DIRECTORY_SEPARATOR . '../../encdec_paytm.php';
+require(dirname(__FILE__) . DIRECTORY_SEPARATOR . '../../PaytmChecksum.php');
+require(dirname(__FILE__) . DIRECTORY_SEPARATOR . '/paytmlib/PaytmHelper.php');
 
 class paytm {
 
@@ -45,7 +46,16 @@ class paytm {
 			$this->update_status();
 		}
 
-		$this->form_action_url = MODULE_PAYMENT_PAYTM_TRANSACTION_URL;
+		//$this->form_action_url = MODULE_PAYMENT_PAYTM_TRANSACTION_URL;
+		$mod = MODULE_PAYMENT_PAYTM_ENVT;    
+			if($mod == "Test"){
+				$this->paytmurl = PaytmConstants::STAGING_HOST;
+				$this->init_txn_url = PaytmConstants::TRANSACTION_INIT_URL_STAGING;
+				//$this->init_txn_status = "https://securegw-stage.paytm.in/"; PRODUCTION_HOST   STAGING_HOST
+			}else{
+				$this->paytmurl = PaytmConstants::PRODUCTION_HOST;
+				$this->init_txn_url = PaytmConstants::TRANSACTION_INIT_URL_PRODUCTION;
+		}
 	}
 
 
@@ -85,7 +95,7 @@ class paytm {
 	public function pre_confirmation_check() {
 		global $cart, $order;
 		
-		$this->form_action_url = MODULE_PAYMENT_PAYTM_TRANSACTION_URL;
+	//	$this->form_action_url = MODULE_PAYMENT_PAYTM_TRANSACTION_URL;
 
 		if (empty($cart->cartID)) {
 			$cart->cartID = $cart->generate_cart_id();
@@ -306,111 +316,6 @@ class paytm {
 			}
 		}
 
-		if(MODULE_PAYMENT_PAYTM_PROMO_CODE_STATUS == "True") {
-
-			$ajax_action = tep_href_link("paytm_addon.php");
-
-			$content =	'<table id="promo-code-section" border="0" width="100%" cellspacing="0" cellpadding="2">
-							<tr>
-								<td>Promo Code</td>
-								<td><input type="text" id="promo_code" placeholder="Have Promo Code? Enter Here.."><td>
-								<td><div id="promo_code_message">&nbsp;</div></td>
-							</tr>
-							<tr>
-								<td colspan="2" align="center"><button type="button" id="btn_promo_code">Apply</button><td>
-								<td>&nbsp;</td>
-							</tr>
-	                	</table>
-
-	                	<style>
-						#promo-code-section .has-error input{
-							border-color: #f56b6b;
-						}
-
-						#promo-code-section input[disabled]{
-							cursor: not-allowed;
-							background-color: #eee;
-							opacity: 1;
-		 				}
-						</style>
-						<script type="text/javascript">
-						/*
-						* Promo Code functionality starts here
-						*/
-						var original_checksum = "";
-						
-						jQuery(document).ready(function($){
-							original_checksum = $("input[type=hidden][name=CHECKSUMHASH]").val();
-
-							// set input width to placeholder
-	       					$("#promo_code").attr("size", $("#promo_code").attr("placeholder").length);
-	    
-
-							$("#btn_promo_code").click(function(){
-
-								$("#promo_code").parent().removeClass("has-error");
-								$("#promo-code-section .text-danger, #promo-code-section .text-success").remove();
-
-								// if some promo code already applied and now user requests to remove it
-								if($(this).hasClass("removePromoCode")){
-
-									// remove promo code from form params
-									$("form[name=checkout_confirmation] input[name=PROMO_CAMP_ID]").remove();
-									$("form[name=checkout_confirmation] input[name=CHECKSUMHASH]").val(original_checksum);
-
-									// enable input to allow user to enter promo code
-									$("#promo_code").prop("disabled", false).val("");
-									$("#btn_promo_code").addClass("btn-primary").removeClass("btn-danger").removeClass("removePromoCode").text("Apply");
-
-								} else {
-
-									if($("#promo_code").val().trim() == "") {
-										$("#promo_code").parent().addClass("has-error");
-										return;
-									};
-
-									$.ajax({
-										url: "'.html_entity_decode($ajax_action).'",
-										type: "post",
-										dataType: "json",
-										data: $("form[name=checkout_confirmation]").serialize() + "&promo_code="+$("#promo_code").val(),
-										success: function(res){
-											if(res.success == true){
-												// remove old input if there is already exists, to avoid duplicate inputs
-												$("form[name=checkout_confirmation] input[name=PROMO_CAMP_ID]").remove();
-
-												// add promo code input to form post
-												$("form[name=checkout_confirmation] input[name=CHECKSUMHASH]").after("<input type=\"hidden\" name=\"PROMO_CAMP_ID\" value=\"\"/>");
-
-												// add promo code value
-												$("form[name=checkout_confirmation] input[name=PROMO_CAMP_ID").val($("#promo_code").val());
-
-												// bind new generated checksum
-												$("form[name=checkout_confirmation] input[name=CHECKSUMHASH]").val(res.CHECKSUMHASH);
-
-												$("#promo_code_message").html("<span class=\"text-success\">"+ res.message +"</span>");
-
-												$("#promo_code").prop("disabled", true);
-												$("#btn_promo_code").removeClass("btn-primary").addClass("btn-danger").addClass("removePromoCode").text("Remove");
-											} else {
-												$("#promo_code").parent().addClass("has-error");
-												$("#promo_code_message").html("<span class=\"text-danger\">"+ res.message +"</span>");
-											}
-										}
-									});
-								}
-							});
-						});
-						/*
-						* Promo Code functionality starts here
-						*/
-						</script>
-						';
-
-			return array("title" => $content);
-		} else {
-			return false;
-		}
 	}
 
 	public function process_button() {
@@ -422,7 +327,7 @@ class paytm {
 		
 		$customCallBackUrl = MODULE_PAYMENT_PAYTM_CUSTOM_CALLBACKURL;
 
-		$amount = $order->info['total'];
+		$amount = number_format($order->info['total'],2);
 		//$orderId = $cart->cartID;
 		$order_id = substr($cart_DirecPay_ID, strpos($cart_DirecPay_ID, '-') + 1);
 		$_SESSION['sorderid'] = $order_id;
@@ -431,13 +336,13 @@ class paytm {
 
 		$post_variables = array(
 								"MID" 				=> MODULE_PAYMENT_PAYTM_MERCHANT_ID,
-								"ORDER_ID"			=> $order_id,
+								"ORDER_ID"			=> PaytmHelper::getPaytmOrderId($order_id),
 								"CUST_ID"			=> $cust_id,
 								"WEBSITE"			=> MODULE_PAYMENT_PAYTM_WEBSITE,
-								"INDUSTRY_TYPE_ID"=> MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID,
+								"INDUSTRY_TYPE_ID"  => MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID,
 								"EMAIL"				=> $order->customer['email_address'],
 								"MOBILE_NO"			=> $order->customer['telephone'],
-								"CHANNEL_ID"		=> MODULE_PAYMENT_PAYTM_CHANNEL_ID,
+								"CHANNEL_ID"		=> PaytmConstants::CHANNEL_ID,
 								"TXN_AMOUNT"		=> $amount,
 							);
 
@@ -448,15 +353,136 @@ class paytm {
 				$post_variables['CALLBACK_URL'] = $customCallBackUrl;
 			}
 		}
-
-		$checksum = getChecksumFromArray($post_variables, $merchant_key);
-		$post_variables['CHECKSUMHASH'] = $checksum;
-
 		$process_button_string = '';
+		$paytmParams["body"] = array(
+            "requestType" => "Payment",
+            "mid" => $post_variables["MID"],
+            "websiteName" => $post_variables["WEBSITE"],
+            "orderId" => $post_variables["ORDER_ID"],
+            "callbackUrl" => $post_variables["CALLBACK_URL"],
+            "txnAmount" => array(
+                "value" => $post_variables["TXN_AMOUNT"],
+                "currency" => "INR",
+            ),
+            "userInfo" => array(
+                "custId" => $post_variables["CUST_ID"],
+                "mobile" => $post_variables["MOBILE_NO"],
+                "email" =>  $post_variables["EMAIL"],
+            ),
+        );
+        $generateSignature = PaytmChecksum::generateSignature(json_encode($paytmParams['body'], JSON_UNESCAPED_SLASHES), $merchant_key);
+        $paytmParams["head"] = array(
+            "signature" => $generateSignature
+        );
+        $apiURL = $this->init_txn_url.$post_variables["MID"] . "&orderId=" . $post_variables["ORDER_ID"];
 
-		foreach ($post_variables as $key => $value) {
-			$process_button_string .= tep_draw_hidden_field($key, $value);
-		}
+        $post_data_string = json_encode($paytmParams, JSON_UNESCAPED_SLASHES);
+        $response_array = PaytmHelper::executecUrl($apiURL, $post_data_string);
+
+        if(!empty($response_array['body']['txnToken'])){
+        $txnToken = $response_array['body']['txnToken'];
+        $paytm_msg = PaytmConstants::TNX_TOKEN_GENERATED;
+        }else{
+         $txnToken = '';
+         $paytm_msg = PaytmConstants::RESPONSE_ERROR;
+
+        }
+
+       //print_r($response_array);  
+        $post_variables['TXN_TOKEN'] = $txnToken;
+        $post_variables['PAYTM_MSG'] = $paytm_msg;
+
+        $spinner = '<div id="paytm-pg-spinner" class="paytm-pg-loader"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div><div class="bounce4"></div><div class="bounce5"></div></div>';
+        $loader = '$("html").find("#bodyWrapper").after("<div></div>");';
+
+			$process_button_string = $spinner.'<script type="application/javascript" crossorigin="anonymous" src="'.$this->paytmurl.'/merchantpgpui/checkoutjs/merchants/'.$post_variables['MID'].'.js"></script>
+				
+			        <style type="text/css">
+            #paytm-pg-spinner {margin: 0% auto 0;width: 70px;text-align: center;z-index: 999999;position: relative;display:block }
+
+            #paytm-pg-spinner > div {width: 10px;height: 10px;background-color: #012b71;border-radius: 100%;display: inline-block;-webkit-animation: sk-bouncedelay 1.4s infinite ease-in-out both;animation: sk-bouncedelay 1.4s infinite ease-in-out both;}
+
+            #paytm-pg-spinner .bounce1 {-webkit-animation-delay: -0.64s;animation-delay: -0.64s;}
+
+            #paytm-pg-spinner .bounce2 {-webkit-animation-delay: -0.48s;animation-delay: -0.48s;}
+            #paytm-pg-spinner .bounce3 {-webkit-animation-delay: -0.32s;animation-delay: -0.32s;}
+
+            #paytm-pg-spinner .bounce4 {-webkit-animation-delay: -0.16s;animation-delay: -0.16s;}
+            #paytm-pg-spinner .bounce4, #paytm-pg-spinner .bounce5{background-color: #48baf5;} 
+            @-webkit-keyframes sk-bouncedelay {0%, 80%, 100% { -webkit-transform: scale(0) }40% { -webkit-transform: scale(1.0) }}
+
+            @keyframes sk-bouncedelay { 0%, 80%, 100% { -webkit-transform: scale(0);transform: scale(0); } 40% { 
+                                            -webkit-transform: scale(1.0); transform: scale(1.0);}}
+            .paytm-overlay{width: 100%;position: fixed;top: 0px;opacity: .4;height: 100%;background: #000;display: block;z-index: 99999999;}
+
+        </style>	
+
+		
+		<script type="text/javascript">
+							 
+		$(document).ready(function(){
+ 
+          '.$loader.'
+            $("#bodyWrapper").next("div").addClass("paytm-overlay paytm-pg-loader");
+            $(".paytm-overlay").css("display","block");
+            $("#paytm-pg-spinner").css("display","block !important");
+
+
+              function openJsCheckout(){
+                 var config = {
+                        "root": "",
+                        "flow": "DEFAULT",
+                        "data": {
+                            "orderId": "'.$post_variables['ORDER_ID'].'",
+                            "token": "'.$post_variables['TXN_TOKEN'].'",
+                            "tokenType": "TXN_TOKEN",
+                            "amount": "'.$post_variables['TXN_AMOUNT'].'"
+                        },
+                        "merchant": {
+                            "redirect": true
+                        },
+                        "handler": {
+                            
+                            "notifyMerchant": function (eventName, data) {
+                                
+                                if(eventName == "SESSION_EXPIRED"){
+                                location.reload(); 
+                               }
+                            }
+                        }
+                    };
+                    if (window.Paytm && window.Paytm.CheckoutJS) {
+                        // initialze configuration using init method 
+                        window.Paytm.CheckoutJS.init(config).then(function onSuccess() {
+                            // after successfully updating configuration, invoke checkoutjs
+                            window.Paytm.CheckoutJS.invoke();
+
+                        jQuery(".paytm-overlay").css("display","none");
+                        //jQuery("#paytm-pg-spinner").css("display","none");
+
+                        }).catch(function onError(error) {
+                            //console.log("error => ", error);
+                        });
+                    }
+
+              }
+              var txnToken = "'.$post_variables['TXN_TOKEN'].'";
+              if(txnToken){
+
+              setTimeout(function(){openJsCheckout()},3000);
+
+              }else{
+              	jQuery("#tdb5").after("<div>'.$post_variables['PAYTM_MSG'].'</div>");
+              	jQuery("#tdb5").next("div").css("color","red");
+              	jQuery(".paytm-overlay").css("display","none");
+                jQuery("#paytm-pg-spinner").css("display","none");
+
+              }
+
+             
+            });
+			</script>
+						';
 
 		return $process_button_string;
 	}
@@ -471,13 +497,19 @@ class paytm {
 
 		$merchant_key = html_entity_decode(MODULE_PAYMENT_PAYTM_MERCHANT_KEY);
 		$paytmChecksum = isset($_POST["CHECKSUMHASH"]) ? $_POST["CHECKSUMHASH"] : "";
-		$isValidChecksum = verifychecksum_e($_POST, $merchant_key, $paytmChecksum);
 
+		//$isValidChecksum = verifychecksum_e($_POST, $merchant_key, $paytmChecksum);
+		$isValidChecksum = PaytmChecksum::verifySignature($_POST, $merchant_key, $paytmChecksum);
 		if(isset($_POST['STATUS']) && $_POST['STATUS'] == "TXN_SUCCESS") {
 			$txnstatus = true;
+
+			
 		}
 
-		$order_id = isset($_POST['ORDERID'])? $_POST['ORDERID'] : "";
+		
+
+		$paytm_order_id = isset($_POST['ORDERID'])? $_POST['ORDERID'] : "";
+		$order_id = PaytmHelper::getOrderId($paytm_order_id);
 
 		// $order_id = str_replace("TEST_".date("Ymdh")."_", "", $order_id); // just for testing
 
@@ -485,23 +517,41 @@ class paytm {
 
 		if ( tep_db_num_rows($order_query) === 1 ) {
 
+
+
 			if($isValidChecksum && $txnstatus) {
 
-				// do status check using S2S call and update status if found success
-				$reqParamList = array(
-													"MID" => MODULE_PAYMENT_PAYTM_MERCHANT_ID,
-													"ORDERID" => $order_id
-											);
 
-				// $reqParamList["ORDERID"] = "TEST_".date("Ymdh")."_".$order_id; // just for testing
-				
-				$StatusCheckSum = getChecksumFromArray($reqParamList, $merchant_key);
 
-				$reqParamList['CHECKSUMHASH'] = $StatusCheckSum;
 
-				$responseParamList = callNewAPI(MODULE_PAYMENT_PAYTM_TRANSACTION_STATUS_URL, $reqParamList);
+		     $requestParamList = array("MID" => MODULE_PAYMENT_PAYTM_MERCHANT_ID , "ORDERID" => $paytm_order_id);
 
-				if ($responseParamList['STATUS'] == 'TXN_SUCCESS' && $responseParamList['TXNAMOUNT'] == $_POST['TXNAMOUNT']) {
+		     $paytmParamsStatus = array();
+                /* body parameters */
+             $paytmParamsStatus["body"] = array(
+                    /* Find your MID in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys */
+                    "mid" => $requestParamList['MID'],
+                    /* Enter your order id which needs to be check status for */
+                    "orderId" => $requestParamList['ORDERID'],
+                );
+              $checksumStatus = PaytmChecksum::generateSignature(json_encode($paytmParamsStatus["body"], JSON_UNESCAPED_SLASHES), MODULE_PAYMENT_PAYTM_MERCHANT_KEY);
+                /* head parameters */
+               $paytmParamsStatus["head"] = array(
+                    /* put generated checksum value here */
+               "signature" => $checksumStatus
+               );
+                /* prepare JSON string for request */
+                $post_data_status = json_encode($paytmParamsStatus, JSON_UNESCAPED_SLASHES);
+                $apiURL = $this->paytmurl.PaytmConstants::ORDER_STATUS_URL; 
+                //$responseStatusArray = PaytmHelper::executecUrl($apiURL, $post_data_string);
+                $ch = curl_init($apiURL);
+                curl_setopt($ch, CURLOPT_POST, 1);
+                curl_setopt($ch, CURLOPT_POSTFIELDS, $post_data_status);
+                curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+                curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json'));
+                $responseJson = curl_exec($ch);
+                $responseStatusArray = json_decode($responseJson, true);
+				if ($responseStatusArray['body']['resultInfo']['resultStatus']=='TXN_SUCCESS' && $responseStatusArray['body']['txnAmount']==$_POST['TXNAMOUNT']) {
 
 					$status_comment = array();
 
@@ -723,6 +773,18 @@ class paytm {
 						'date_added'					=> 'now()'
 					);
 
+
+		$params[] = array(
+						'configuration_title'		=> 'Paytm Environment',
+						'configuration_key'			=> 'MODULE_PAYMENT_PAYTM_ENVT',
+						'configuration_value'		=> 'Test',
+						'configuration_description' => 'Choose your paytm environment Test/Live',
+						'configuration_group_id'	=> '6',
+						'sort_order'					=> ++$sort_order,
+						'set_function'					=> 'tep_cfg_select_option(array(\'Test\', \'Live\'), ',
+						'date_added'					=> 'now()'
+					);
+
 		// Merchant Id
 		$params[] = array(
 						'configuration_title'		=> 'Merchant ID',
@@ -763,39 +825,6 @@ class paytm {
 						'configuration_key'			=> 'MODULE_PAYMENT_PAYTM_INDUSTRY_TYPE_ID',
 						'configuration_value'		=> '',
 						'configuration_description'=> 'Industry Type Provided by Paytm',
-						'configuration_group_id'	=> '6',
-						'sort_order'					=> ++$sort_order,
-						'date_added'					=> 'now()'
-					);
-
-		// Channel Id
-		$params[] = array(
-						'configuration_title'		=> 'Channel ID',
-						'configuration_key'			=> 'MODULE_PAYMENT_PAYTM_CHANNEL_ID',
-						'configuration_value'		=> '',
-						'configuration_description'=> 'Channel ID Provided by Paytm',
-						'configuration_group_id'	=> '6',
-						'sort_order'					=> ++$sort_order,
-						'date_added'					=> 'now()'
-					);
-
-		// Transaction URL
-		$params[] = array(
-						'configuration_title'		=> 'Transaction URL',
-						'configuration_key'			=> 'MODULE_PAYMENT_PAYTM_TRANSACTION_URL',
-						'configuration_value'		=> '',
-						'configuration_description'=> 'Transaction URL Provided by Paytm',
-						'configuration_group_id'	=> '6',
-						'sort_order'					=> ++$sort_order,
-						'date_added'					=> 'now()'
-					);
-
-		// Transaction Status URL
-		$params[] = array(
-						'configuration_title'		=> 'Transaction Status URL',
-						'configuration_key'			=> 'MODULE_PAYMENT_PAYTM_TRANSACTION_STATUS_URL',
-						'configuration_value'		=> '',
-						'configuration_description'=> 'Transaction Status URL Provided by Paytm',
 						'configuration_group_id'	=> '6',
 						'sort_order'					=> ++$sort_order,
 						'date_added'					=> 'now()'
@@ -875,40 +904,8 @@ class paytm {
 						'date_added'					=> 'now()'
 					);
 
-		// Promo Code Status
-		$params[] = array(
-						'configuration_title'		=> 'Promo Code Status',
-						'configuration_key'			=> 'MODULE_PAYMENT_PAYTM_PROMO_CODE_STATUS',
-						'configuration_value'		=> 'False',
-						'configuration_description'=> 'Enabling this will show Promo Code field at Checkout.',
-						'configuration_group_id'	=> '6',
-						'sort_order'					=> ++$sort_order,
-						'set_function'					=> 'tep_cfg_select_option(array(\'True\', \'False\'), ',
-						'date_added'					=> 'now()'
-					);
 
-		// Promo Code Local Validation
-		$params[] = array(
-						'configuration_title'		=> 'Local Validation',
-						'configuration_key'			=> 'MODULE_PAYMENT_PAYTM_PROMO_CODE_VALIDATION',
-						'configuration_value'		=> 'True',
-						'configuration_description'=> 'Transaction will be failed in case of Promo Code failure at Paytm\'s end.',
-						'configuration_group_id'	=> '6',
-						'sort_order'					=> ++$sort_order,
-						'set_function'					=> 'tep_cfg_select_option(array(\'True\', \'False\'), ',
-						'date_added'					=> 'now()'
-					);
 
-		// Promo Codes
-		$params[] = array(
-						'configuration_title'		=> 'Promo Codes',
-						'configuration_key'			=> 'MODULE_PAYMENT_PAYTM_PROMO_CODES',
-						'configuration_value'		=> '',
-						'configuration_description'=> 'Use comma ( , ) to separate multiple codes i.e. FB50,CASHBACK10 etc.',
-						'configuration_group_id'	=> '6',
-						'sort_order'					=> ++$sort_order,
-						'date_added'					=> 'now()'
-					);
 
 		return $params;
 	}
