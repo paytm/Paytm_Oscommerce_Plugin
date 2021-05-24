@@ -104,7 +104,7 @@ class paytm {
 		if (!tep_session_is_registered('cartID')) {
 			tep_session_register('cartID');
 		}
-		$order->info['payment_method'] = '<img src="ext/modules/payment/paytm/images/logo.png" border="0" alt="Paytm Logo" style="padding: 3px; width:auto; height: 100%;" />';
+		$order->info['payment_method'] = '<img src="ext/modules/payment/paytm/images/logo.png" border="0" alt="Paytm Logo" style="padding: 3px; width:auto; height: 100%;" /><br/><img src="ext/modules/payment/paytm/images/sub_logo.png" border="0" alt="Paytm Logo" style="padding: 3px; width:auto; height: 100%;" />';
 	}
 
 
@@ -388,9 +388,17 @@ class paytm {
 
         }
 
-       //print_r($response_array);  
+       	//print_r($response_array);  
         $post_variables['TXN_TOKEN'] = $txnToken;
         $post_variables['PAYTM_MSG'] = $paytm_msg;
+
+        //version
+        $fullVersion = explode('v',PROJECT_VERSION);
+        if(isset($fullVersion[1])){
+        	$version = $fullVersion[1];
+        }else{
+        	$version = PROJECT_VERSION;
+        }
 
         $spinner = '<div id="paytm-pg-spinner" class="paytm-pg-loader"><div class="bounce1"></div><div class="bounce2"></div><div class="bounce3"></div><div class="bounce4"></div><div class="bounce5"></div></div>';
         $loader = '$("html").find("#bodyWrapper").after("<div></div>");';
@@ -438,6 +446,10 @@ class paytm {
                             "tokenType": "TXN_TOKEN",
                             "amount": "'.$post_variables['TXN_AMOUNT'].'"
                         },
+                        "integration": {
+							"platform": "OsCommerce",
+							"version": "'.$version.'|'.PaytmConstants::PLUGIN_VERSION.'"
+						},
                         "merchant": {
                             "redirect": true
                         },
