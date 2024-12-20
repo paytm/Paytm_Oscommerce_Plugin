@@ -51,7 +51,7 @@ class paytm {
 			if($mod == "Test"){
 				$this->paytmurl = PaytmConstants::STAGING_HOST;
 				$this->init_txn_url = PaytmConstants::TRANSACTION_INIT_URL_STAGING;
-				//$this->init_txn_status = "https://securegw-stage.paytm.in/"; PRODUCTION_HOST   STAGING_HOST
+				//$this->init_txn_status = "https://securestage.paytmpayments.com/"; PRODUCTION_HOST   STAGING_HOST
 			}else{
 				$this->paytmurl = PaytmConstants::PRODUCTION_HOST;
 				$this->init_txn_url = PaytmConstants::TRANSACTION_INIT_URL_PRODUCTION;
@@ -541,7 +541,7 @@ class paytm {
 		     $paytmParamsStatus = array();
                 /* body parameters */
              $paytmParamsStatus["body"] = array(
-                    /* Find your MID in your Paytm Dashboard at https://dashboard.paytm.com/next/apikeys */
+                    /* Find your MID in your Paytm Dashboard at https://dashboard.paytmpayments.com/next/apikeys */
                     "mid" => $requestParamList['MID'],
                     /* Enter your order id which needs to be check status for */
                     "orderId" => $requestParamList['ORDERID'],
